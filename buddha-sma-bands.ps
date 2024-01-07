@@ -1,0 +1,146 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Darth_Buddha
+
+//@version=5
+indicator(title = "Buddha-SMA-Bands", shorttitle = "Buddha", overlay = true)
+//  Buddha-SMA-Bands
+//      This indacator incluides the most commly watched slow moving averages. The standard 20, 50, 200 and 365.
+//      I have used the fibonacci numbers which are closest to the standard sma.  These are 21, 55, 233 and 377.
+//      We than use both sets of SMA to form bands which represent areas of potential support and resistance.
+//      TALK ABOUT why color change
+//
+//---SMA---//
+float   SMA_020  = ta.sma(source = close, length = 20)
+float   SMA_021  = ta.sma(source = close, length = 21)
+float   SMA_050  = ta.sma(source = close, length = 50)
+float   SMA_055  = ta.sma(source = close, length = 55)
+float   SMA_200  = ta.sma(source = close, length = 200)
+float   SMA_233  = ta.sma(source = close, length = 233)
+float   SMA_365  = ta.sma(source = close, length = 365)
+float   SMA_377  = ta.sma(source = close, length = 377)
+
+//---Variable---//
+var line LINE_020 = na
+var line LINE_021 = na
+var line LINE_050 = na
+var line LINE_055 = na
+var line LINE_200 = na
+var line LINE_233 = na
+var line LINE_365 = na
+var line LINE_377 = na
+
+//---------------------------------------------------[GLOBAL-COLOR]---------------------------------------------------//
+color   COLOR_020   = color.rgb(128, 000, 000, 65)
+color   COLOR_021   = color.rgb(256, 000, 000, 65)
+color   COLOR_050   = color.rgb(000, 000, 128, 65)
+color   COLOR_055   = color.rgb(000, 000, 256, 65)
+color   COLOR_200   = color.rgb(256, 256, 000, 65)
+color   COLOR_233   = color.rgb(256, 128, 000, 65)
+color   COLOR_365   = color.rgb(256, 000, 256, 65)
+color   COLOR_377   = color.rgb(128, 000, 128, 65)
+
+
+//---------------------------------------------------[COLOR--LOGIC]---------------------------------------------------//
+color   COLOR_020_021_FILL = na
+color   COLOR_050_055_FILL = na
+color   COLOR_200_233_FILL = na
+color   COLOR_365_377_FILL = na
+//---[Logic-COLOR_020_021_FILL]
+if SMA_020 > SMA_021
+    COLOR_020_021_FILL := COLOR_020
+else
+    COLOR_020_021_FILL := COLOR_021
+//---[Logic-COLOR_050_055_FILL]
+if SMA_050 > SMA_055
+    COLOR_050_055_FILL := COLOR_050
+else
+    COLOR_050_055_FILL := COLOR_055
+//---[Logic-COLOR_200_233_FILL]
+if SMA_200 > SMA_233
+    COLOR_200_233_FILL := COLOR_200
+else
+    COLOR_200_233_FILL := COLOR_233
+//---[Logic-COLOR_365_377_FILL]
+if SMA_365 > SMA_377
+    COLOR_365_377_FILL := COLOR_365
+else
+    COLOR_365_377_FILL := COLOR_377
+
+
+//----------------------------------------------------[SMA__20-21]----------------------------------------------------//
+//---[SMA_020-021]
+plot020sma   = plot(SMA_020, "20 SMA", COLOR_020, 3, plot.style_line)
+plot021sma   = plot(SMA_021, "21 SMA", COLOR_021, 3, plot.style_line)
+//---[SMA_020-021_FILL]
+fill(plot020sma, plot021sma, SMA_020, SMA_021, COLOR_020_021_FILL, COLOR_020_021_FILL, "20-21 sma-band")
+//---[SMA_020-021_EXTEND-LINE]
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_020)
+        line.delete(LINE_020)
+    LINE_020 := line.new(time, SMA_020, time + 1, SMA_020, xloc.bar_time, extend.right, COLOR_020, line.style_solid, 3)
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_021)
+        line.delete(LINE_021)
+    LINE_021 := line.new(time, SMA_021, time + 1, SMA_021, xloc.bar_time, extend.right, COLOR_021, line.style_solid, 3)
+//---[SMA_020-021_EXTEND-LINE-FILL]
+FILL_020_021 = linefill.new(LINE_020, LINE_021, color = COLOR_020_021_FILL)
+
+
+//----------------------------------------------------[SMA__50-55]----------------------------------------------------//
+//---[SMA_050-055]
+plot050sma   = plot(SMA_050, "50 SMA", COLOR_050, 3, plot.style_line)
+plot055sma   = plot(SMA_055, "55 SMA", COLOR_055, 3, plot.style_line)
+//---[SMA_050-055_FILL]
+fill(plot050sma, plot055sma, SMA_050, SMA_055, COLOR_050_055_FILL, COLOR_050_055_FILL, "50-55 sma-band")
+//---[SMA_050-055_EXTEND-LINE]
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_050)
+        line.delete(LINE_050)
+    LINE_050 := line.new(time, SMA_050, time + 1, SMA_050, xloc.bar_time, extend.right, COLOR_050, line.style_solid, 3)
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_055)
+        line.delete(LINE_055)
+    LINE_055 := line.new(time, SMA_055, time + 1, SMA_055, xloc.bar_time, extend.right, COLOR_055, line.style_solid, 3)
+//---[SMA_020-021_EXTEND-LINE-FILL]
+FILL_050_055 = linefill.new(LINE_050, LINE_055, color = COLOR_050_055_FILL)
+
+
+//---------------------------------------------------[SMA__200-233]---------------------------------------------------//
+//---[SMA_200-233]
+plot200sma   = plot(SMA_200, "200 SMA", COLOR_200, 3, plot.style_line)
+plot233sma   = plot(SMA_233, "233 SMA", COLOR_233, 3, plot.style_line)
+//---[SMA_200-233_FILL]
+fill(plot200sma, plot233sma, SMA_200, SMA_233, COLOR_200_233_FILL, COLOR_200_233_FILL, "200-233 SMA-Band")
+//---[SMA_200-233_EXTEND-LINE]
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_200)
+        line.delete(LINE_200)
+    LINE_200 := line.new(time, SMA_200, time + 1, SMA_200, xloc.bar_time, extend.right, COLOR_200, line.style_solid, 3)
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_233)
+        line.delete(LINE_233)
+    LINE_233 := line.new(time, SMA_233, time + 1, SMA_233, xloc.bar_time, extend.right, COLOR_233, line.style_solid, 3)
+//---[SMA_200-233_EXTEND-LINE-FILL]
+FILL_200_233 = linefill.new(LINE_200, LINE_233, color = COLOR_200_233_FILL)
+
+
+//---------------------------------------------------[SMA__365-377]---------------------------------------------------//
+//---[SMA_365-377]
+plot365sma   = plot(SMA_365, "365 SMA", COLOR_365, 3, plot.style_line)
+plot377sma   = plot(SMA_377, "377 SMA", COLOR_377, 3, plot.style_line)
+//---[SMA_365-377_FILL]
+fill(plot365sma, plot377sma, SMA_365, SMA_377, COLOR_365_377_FILL, COLOR_365_377_FILL, "365-377 SMA-Band")
+//---[SMA_365-377_EXTEND-LINE]
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_365)
+        line.delete(LINE_365)
+    LINE_365 := line.new(time, SMA_365, time + 1, SMA_365, xloc.bar_time, extend.right, COLOR_365, line.style_solid, 3)
+if barstate.islast and barstate.isrealtime
+    if not na(LINE_377)
+        line.delete(LINE_377)
+    LINE_377 := line.new(time, SMA_377, time + 1, SMA_377, xloc.bar_time, extend.right, COLOR_377, line.style_solid, 3)
+//---[SMA_365-377_EXTEND-LINE-FILL]
+FILL_365_377 = linefill.new(LINE_365, LINE_377, color = COLOR_365_377_FILL)
+
+
+//---END-CODE---//
