@@ -2,34 +2,17 @@
 // © Darth_Buddha
 
 //@version=5
-indicator(title = "Buddha-SMA-Bands", shorttitle = "Buddha", overlay = true)
-//  Buddha-SMA-Bands
+indicator(title = "Buddha-SMA-Bands", shorttitle = "Buddha-Bands", overlay = true, max_lines_count=6)
+//-------------------------------------------------[BUDDHA-SMA-BANDS]-------------------------------------------------//
+//
 //      This indacator incluides the most commly watched slow moving averages. The standard 20, 50, 200 and 365.
 //      I have used the fibonacci numbers which are closest to the standard sma.  These are 21, 55, 233 and 377.
 //      We than use both sets of SMA to form bands which represent areas of potential support and resistance.
-//      TALK ABOUT why color change
+//      The bands will change color based on which sma is on top. The 20sma over the 21 sma would indacate the
+//      market is trending up during the average of the last 21 candles of what ever time period you are looking at.
+//      Same is true for the other sma bands 50-55, 200-233 and 365-377 each capturing larger sets of time.
 //
-//---SMA---//
-float   SMA_020  = ta.sma(source = close, length = 20)
-float   SMA_021  = ta.sma(source = close, length = 21)
-float   SMA_050  = ta.sma(source = close, length = 50)
-float   SMA_055  = ta.sma(source = close, length = 55)
-float   SMA_200  = ta.sma(source = close, length = 200)
-float   SMA_233  = ta.sma(source = close, length = 233)
-float   SMA_365  = ta.sma(source = close, length = 365)
-float   SMA_377  = ta.sma(source = close, length = 377)
-
-//---Variable---//
-var line LINE_020 = na
-var line LINE_021 = na
-var line LINE_050 = na
-var line LINE_055 = na
-var line LINE_200 = na
-var line LINE_233 = na
-var line LINE_365 = na
-var line LINE_377 = na
-
-//---------------------------------------------------[GLOBAL-COLOR]---------------------------------------------------//
+//----------------------------------------------<CONSTANT__DECLARATIONS>----------------------------------------------//
 color   COLOR_020   = color.rgb(128, 000, 000, 65)
 color   COLOR_021   = color.rgb(256, 000, 000, 65)
 color   COLOR_050   = color.rgb(000, 000, 128, 65)
@@ -38,109 +21,99 @@ color   COLOR_200   = color.rgb(256, 256, 000, 65)
 color   COLOR_233   = color.rgb(256, 128, 000, 65)
 color   COLOR_365   = color.rgb(256, 000, 256, 65)
 color   COLOR_377   = color.rgb(128, 000, 128, 65)
-
-
-//---------------------------------------------------[COLOR--LOGIC]---------------------------------------------------//
-color   COLOR_020_021_FILL = na
-color   COLOR_050_055_FILL = na
-color   COLOR_200_233_FILL = na
-color   COLOR_365_377_FILL = na
-//---[Logic-COLOR_020_021_FILL]
-if SMA_020 > SMA_021
-    COLOR_020_021_FILL := COLOR_020
-else
-    COLOR_020_021_FILL := COLOR_021
-//---[Logic-COLOR_050_055_FILL]
-if SMA_050 > SMA_055
-    COLOR_050_055_FILL := COLOR_050
-else
-    COLOR_050_055_FILL := COLOR_055
-//---[Logic-COLOR_200_233_FILL]
-if SMA_200 > SMA_233
-    COLOR_200_233_FILL := COLOR_200
-else
-    COLOR_200_233_FILL := COLOR_233
-//---[Logic-COLOR_365_377_FILL]
-if SMA_365 > SMA_377
-    COLOR_365_377_FILL := COLOR_365
-else
-    COLOR_365_377_FILL := COLOR_377
-
-
-//----------------------------------------------------[SMA__20-21]----------------------------------------------------//
-//---[SMA_020-021]
-plot020sma   = plot(SMA_020, "20 SMA", COLOR_020, 3, plot.style_line)
-plot021sma   = plot(SMA_021, "21 SMA", COLOR_021, 3, plot.style_line)
-//---[SMA_020-021_FILL]
-fill(plot020sma, plot021sma, SMA_020, SMA_021, COLOR_020_021_FILL, COLOR_020_021_FILL, "20-21 sma-band")
-//---[SMA_020-021_EXTEND-LINE]
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_020)
-        line.delete(LINE_020)
-    LINE_020 := line.new(time, SMA_020, time + 1, SMA_020, xloc.bar_time, extend.right, COLOR_020, line.style_solid, 3)
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_021)
-        line.delete(LINE_021)
-    LINE_021 := line.new(time, SMA_021, time + 1, SMA_021, xloc.bar_time, extend.right, COLOR_021, line.style_solid, 3)
-//---[SMA_020-021_EXTEND-LINE-FILL]
-FILL_020_021 = linefill.new(LINE_020, LINE_021, color = COLOR_020_021_FILL)
-
-
-//----------------------------------------------------[SMA__50-55]----------------------------------------------------//
-//---[SMA_050-055]
-plot050sma   = plot(SMA_050, "50 SMA", COLOR_050, 3, plot.style_line)
-plot055sma   = plot(SMA_055, "55 SMA", COLOR_055, 3, plot.style_line)
-//---[SMA_050-055_FILL]
-fill(plot050sma, plot055sma, SMA_050, SMA_055, COLOR_050_055_FILL, COLOR_050_055_FILL, "50-55 sma-band")
-//---[SMA_050-055_EXTEND-LINE]
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_050)
-        line.delete(LINE_050)
-    LINE_050 := line.new(time, SMA_050, time + 1, SMA_050, xloc.bar_time, extend.right, COLOR_050, line.style_solid, 3)
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_055)
-        line.delete(LINE_055)
-    LINE_055 := line.new(time, SMA_055, time + 1, SMA_055, xloc.bar_time, extend.right, COLOR_055, line.style_solid, 3)
-//---[SMA_020-021_EXTEND-LINE-FILL]
-FILL_050_055 = linefill.new(LINE_050, LINE_055, color = COLOR_050_055_FILL)
-
-
-//---------------------------------------------------[SMA__200-233]---------------------------------------------------//
-//---[SMA_200-233]
-plot200sma   = plot(SMA_200, "200 SMA", COLOR_200, 3, plot.style_line)
-plot233sma   = plot(SMA_233, "233 SMA", COLOR_233, 3, plot.style_line)
-//---[SMA_200-233_FILL]
-fill(plot200sma, plot233sma, SMA_200, SMA_233, COLOR_200_233_FILL, COLOR_200_233_FILL, "200-233 SMA-Band")
-//---[SMA_200-233_EXTEND-LINE]
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_200)
-        line.delete(LINE_200)
-    LINE_200 := line.new(time, SMA_200, time + 1, SMA_200, xloc.bar_time, extend.right, COLOR_200, line.style_solid, 3)
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_233)
-        line.delete(LINE_233)
-    LINE_233 := line.new(time, SMA_233, time + 1, SMA_233, xloc.bar_time, extend.right, COLOR_233, line.style_solid, 3)
-//---[SMA_200-233_EXTEND-LINE-FILL]
-FILL_200_233 = linefill.new(LINE_200, LINE_233, color = COLOR_200_233_FILL)
-
-
-//---------------------------------------------------[SMA__365-377]---------------------------------------------------//
-//---[SMA_365-377]
-plot365sma   = plot(SMA_365, "365 SMA", COLOR_365, 3, plot.style_line)
-plot377sma   = plot(SMA_377, "377 SMA", COLOR_377, 3, plot.style_line)
-//---[SMA_365-377_FILL]
-fill(plot365sma, plot377sma, SMA_365, SMA_377, COLOR_365_377_FILL, COLOR_365_377_FILL, "365-377 SMA-Band")
-//---[SMA_365-377_EXTEND-LINE]
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_365)
-        line.delete(LINE_365)
-    LINE_365 := line.new(time, SMA_365, time + 1, SMA_365, xloc.bar_time, extend.right, COLOR_365, line.style_solid, 3)
-if barstate.islast and barstate.isrealtime
-    if not na(LINE_377)
-        line.delete(LINE_377)
-    LINE_377 := line.new(time, SMA_377, time + 1, SMA_377, xloc.bar_time, extend.right, COLOR_377, line.style_solid, 3)
-//---[SMA_365-377_EXTEND-LINE-FILL]
-FILL_365_377 = linefill.new(LINE_365, LINE_377, color = COLOR_365_377_FILL)
-
-
-//---END-CODE---//
+//
+float   SMA_020  = ta.sma(source = close, length = 20)
+float   SMA_021  = ta.sma(source = close, length = 21)
+float   SMA_050  = ta.sma(source = close, length = 50)
+float   SMA_055  = ta.sma(source = close, length = 55)
+float   SMA_200  = ta.sma(source = close, length = 200)
+float   SMA_233  = ta.sma(source = close, length = 233)
+float   SMA_365  = ta.sma(source = close, length = 365)
+float   SMA_377  = ta.sma(source = close, length = 377)
+//
+//
+//------------------------------------------------------<INPUTS>------------------------------------------------------//
+int lineWidth = input.int(title="Line Width", defval=3, step=1, minval=1, maxval=5)
+//
+//
+//-----------------------------------------------<FUNCTION_DECLARATIONS>----------------------------------------------//
+//  @function Draws a line to the right of the sma value.
+//  @returns Draws new line
+drawSmaLine(SMA_Value, lineColor, lineWidth) =>
+    var line SMA_Line = na
+    if barstate.islast and barstate.isrealtime
+        if not na(SMA_Line)
+            line.delete(SMA_Line)
+        SMA_Line := line.new(time, SMA_Value, time + 1, SMA_Value, xloc.bar_time, extend.right)
+        line.set_color(SMA_Line, lineColor)
+        line.set_style(SMA_Line, line.style_solid)
+        line.set_width(SMA_Line, lineWidth)
+    SMA_Line
+//
+//
+//---------------------------------------------------<CALCULATIONS>---------------------------------------------------//
+color   color_020_021_band = na
+color   color_050_055_band = na
+color   color_200_233_band = na
+color   color_365_377_band = na
+//---[COLOR-LOGIC]
+color_020_021_band := SMA_020 > SMA_021 ? COLOR_020 : COLOR_021
+color_050_055_band := SMA_050 > SMA_055 ? COLOR_050 : COLOR_055
+color_200_233_band := SMA_200 > SMA_233 ? COLOR_200 : COLOR_233
+color_365_377_band := SMA_365 > SMA_377 ? COLOR_365 : COLOR_377
+//------------------------------------------------------<VISUAL>------------------------------------------------------//
+//---[PLOT-SMA]
+plot020sma   = plot(SMA_020,  "20 SMA", COLOR_020, lineWidth, plot.style_line)
+plot021sma   = plot(SMA_021,  "21 SMA", COLOR_021, lineWidth, plot.style_line)
+plot050sma   = plot(SMA_050,  "50 SMA", COLOR_050, lineWidth, plot.style_line)
+plot055sma   = plot(SMA_055,  "55 SMA", COLOR_055, lineWidth, plot.style_line)
+plot200sma   = plot(SMA_200, "200 SMA", COLOR_200, lineWidth, plot.style_line)
+plot233sma   = plot(SMA_233, "233 SMA", COLOR_233, lineWidth, plot.style_line)
+plot365sma   = plot(SMA_365, "365 SMA", COLOR_365, lineWidth, plot.style_line)
+plot377sma   = plot(SMA_377, "377 SMA", COLOR_377, lineWidth, plot.style_line)
+//---[PLOT-SMA-FILL]
+fill(plot020sma, plot021sma, SMA_020, SMA_021, color_020_021_band, color_020_021_band,   "20-21 SMA-Band")
+fill(plot050sma, plot055sma, SMA_050, SMA_055, color_050_055_band, color_050_055_band,   "50-55 SMA-Band")
+fill(plot200sma, plot233sma, SMA_200, SMA_233, color_200_233_band, color_200_233_band, "200-233 SMA-Band")
+fill(plot365sma, plot377sma, SMA_365, SMA_377, color_365_377_band, color_365_377_band, "365-377 SMA-Band")
+//---[EXTEND-LINE]
+LINE_020 = drawSmaLine(SMA_020, COLOR_020, lineWidth)
+LINE_021 = drawSmaLine(SMA_021, COLOR_021, lineWidth)
+LINE_050 = drawSmaLine(SMA_050, COLOR_050, lineWidth)
+LINE_055 = drawSmaLine(SMA_055, COLOR_055, lineWidth)
+LINE_200 = drawSmaLine(SMA_200, COLOR_200, lineWidth)
+LINE_233 = drawSmaLine(SMA_233, COLOR_233, lineWidth)
+LINE_365 = drawSmaLine(SMA_365, COLOR_365, lineWidth)
+LINE_377 = drawSmaLine(SMA_377, COLOR_377, lineWidth)
+//---[EXTEND-LINE-FILL]
+FILL_020_021 = linefill.new(LINE_020, LINE_021, color = color_020_021_band)
+FILL_050_055 = linefill.new(LINE_050, LINE_055, color = color_050_055_band)
+FILL_200_233 = linefill.new(LINE_200, LINE_233, color = color_200_233_band)
+FILL_365_377 = linefill.new(LINE_365, LINE_377, color = color_365_377_band)
+//
+//
+//-----------------------------------------------------[END-CODE]-----------------------------------------------------//
+//
+//  Downloading from any other source besides Trading View, for example Github.
+//
+//  MIT License
+//
+//  Copyright (c) 2024 Darth Buddha
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in all
+//  copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//  SOFTWARE.

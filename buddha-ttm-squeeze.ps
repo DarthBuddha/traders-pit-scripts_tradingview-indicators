@@ -1,16 +1,107 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Darth_Buddha
+
 //@version=5
-indicator('Buddha Squeeze', shorttitle='Buddha Squeeze')
-length = input.int(title='Length', defval=21, minval=0)
-bband(length, mult) =>
-    ta.sma(close, length) + mult * ta.stdev(close, length)
-keltner(length, mult) =>
-    ta.ema(close, length) + mult * ta.ema(ta.tr, length)
+indicator(title="Buddha-TTM-Squeeze", overlay=false)
+//------------------------------------------------[BUDDHA-TTM-SQUEEZE]------------------------------------------------//
+//
+//      My take on the classic TTM momentum oscillator we all love by John Carter.
+//      I have made some adjustments to the internal numbers used for caculation.
+//      The length is adjusted to 21, to keep with the fibonacci number theme.
+//      The bollinger bands standard deviation is set to 2.0
+//      The keltner channels standard deviation is set to 1.5
+//      Squeeze labels add some visual flare.
+//
+//----------------------------------------------<CONSTANT__DECLARATIONS>----------------------------------------------//
+//
+color   COLOR_BULL      = color.rgb(000, 128, 000, 50)  //  increasing momentum
+color   COLOR_BULL_BEAR = color.rgb(000, 255, 000, 50)  //  increasing momentum
+color   COLOR_BEAR      = color.rgb(128, 000, 000, 50)  //  decreasing momentum
+color   COLOR_BEAR_BULL = color.rgb(255, 000, 000, 50)  //  decreasing momentum
+color   COLOR_ALERT     = color.rgb(255, 255, 000, 50)  //  squeeze alert
+color   COLOR_LABEL     = color.rgb(255, 255, 000, 00)  //  squeeze alert
+color   COLOR_TEXT      = color.rgb(000, 000, 000, 00)  //  squeeze alert
+//
+//------------------------------------------------------<INPUTS>------------------------------------------------------//
+//
+int     chartLength = input.int(title="Chart Length", defval=21, options = [8, 13, 21, 34, 55])
+float   stdDevBB    = input.float(title="Bollinger Band Std. Dev.", defval=2.0, step=0.1, minval=0, maxval=5)
+float   stdDevKC    = input.float(title="Keltner Std. Dev.", defval=1.5, step=0.1,minval=0, maxval=2)
+//
+//-----------------------------------------------<FUNCTION_DECLARATIONS>----------------------------------------------//
+//  @function Determines if a Buddha-TTM-Squeeze is in effect.
+//  @returns Bool true/false
+buddhaSqueeze(series, length, stdDevKC , stdDevBB) =>
+    atr = ta.atr(length)
+    sDev = ta.stdev(series, length)
+    denom = stdDevKC  * atr
+    bbsInd = denom != 0 ? (stdDevBB * sDev) / denom : 0
+    squeeze = bbsInd < 1
+//
+//
+//---------------------------------------------------<CALCULATIONS>---------------------------------------------------//
+//
+//---[OSCILLATOR]
+float   osc_value   = (ta.highest(high, chartLength) + ta.lowest(low, chartLength)) / 2 + ta.ema(close, chartLength)
+float   oscillator  = (ta.linreg(close - osc_value / 2, chartLength, 0))
+//---[SQUEEZE]
+squeeze = buddhaSqueeze(close, chartLength, stdDevKC, stdDevBB)
+//---[MTF]
+// [oneMinSqueeze, oneMinBBSInd] = request.security(syminfo.tickerid, "1", buddhaSqueeze(close, chartLength, stdDevKC, stdDevBB, 1))
+//
+//------------------------------------------------------<VISUAL>------------------------------------------------------//
+//
+//---[COLOR-LOGIC_OSCILLATOR]
+color   oscillatorColor = na    // Holds column color
+oscillatorColor := oscillator[0] > oscillator[1] ?
+                      (oscillator[0] > 0 ? COLOR_BULL : COLOR_BULL_BEAR) :
+                      (oscillator[0] > 0 ? COLOR_BEAR_BULL : COLOR_BEAR)
+//---[COLOR-LOGIC_SQUEEZE]
+color   squeezeColor  = squeeze ? COLOR_ALERT : na
+color   labelColor    = squeeze ? COLOR_LABEL : na
+color   textColor     = squeeze ? COLOR_TEXT  : na
+//---[PLOT-ZERO-LINE]
+hline(0, "Zero Line", color.rgb(255, 255, 255, 70), hline.style_solid, 1, editable = false)
+//---[PLOT-OSCILLATOR]
+plot(oscillator * 100, "Histogram", color=oscillatorColor, style=plot.style_columns, editable = false)
+//---[PLOT-SQUEEZE]
+plot(0, "Squeeze", squeezeColor, 3, plot.style_circles, editable = false)
+//---[SQUEEZE-LABEL]
+var squeezeLabel = label.new(x=bar_index[0], y=0)
+label.set_text(squeezeLabel, "Squeeze!")
+label.set_xloc(squeezeLabel, time + 1, xloc.bar_time)
+label.set_color(squeezeLabel, labelColor)
+label.set_style(squeezeLabel, label.style_label_left)
+label.set_textcolor(squeezeLabel, textColor)
+label.set_size(squeezeLabel, size.normal)
+label.set_textalign(squeezeLabel, text.align_center)
+label.set_text_font_family(squeezeLabel, font.family_monospace)
+//---[MTF-LABEL]
+// plot(oneMinBBSInd, "1 Min BBS Index", color=color.blue)
+// plotchar(oneMinSqueeze, "1 Min Squeeze", "●", location.top, color=color.red)
 
-e1 = (ta.highest(high, length) + ta.lowest(low, length)) / 2 + ta.sma(close, length)
-osc = ta.linreg(close - e1 / 2, length, 0)
-diff = bband(length, 2) - keltner(length, 1)
-osc_color = osc[1] < osc[0] ? osc[0] >= 0 ? #1b5e20 : #26f02f : osc[0] >= 0 ? #ff0000 : #801922
-mid_color = diff >= 0 ? color.rgb(255, 255, 255, 100) : color.rgb(255, 235, 59)
-
-plot(osc, color=osc_color, style=plot.style_columns, linewidth=4)
-plot(0, color=mid_color, style=plot.style_cross, linewidth=4)
+//-----------------------------------------------------[END-CODE]-----------------------------------------------------//
+//
+//  Downloading from any other source besides Trading View, for example Github.
+//
+//  MIT License
+//
+//  Copyright (c) 2024 Darth Buddha
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in all
+//  copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//  SOFTWARE.
