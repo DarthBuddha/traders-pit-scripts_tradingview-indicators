@@ -1,0 +1,416 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Darth_Buddha
+
+//@version=5
+indicator(title="Buddha-Chart-Essentials", overlay=true)
+
+//----------------------------------------------[BUDDHA-CHART-ESSENTIALS]---------------------------------------------//
+//
+//  This indicator contains essential features to help organize your day.
+//  Chart Tools:
+//      Modified a version of Customizable Vertical Lines by Raj7rader
+//      Modified a version of Sector Performance by vtrader321
+//  Indicators:
+//      Buddha-SMA-Bands
+//
+//----------------------------------------------<CONSTANT__DECLARATIONS>----------------------------------------------//
+//
+LIGHTTRANSP = 90
+AVGTRANSP = 80
+HEAVYTRANSP = 70
+//---[COLOR]
+COLOR_OPEN          = color.rgb(000, 255, 000, 90)
+COLOR_CLOSE         = color.rgb(255, 000, 000, 90)
+COLOR_LUNCH         = color.rgb(255, 255, 255, 90)
+COLOR_FUTURES       = color.rgb(000, 000, 255, 90)
+COLOR_VLINE         = color.rgb(255, 255, 255, 90)
+COLOR_020           = color.rgb(255, 000, 000, 65)
+COLOR_021           = color.rgb(128, 000, 000, 65)
+COLOR_050           = color.rgb(000, 255, 255, 65)
+COLOR_055           = color.rgb(000, 000, 255, 65)
+COLOR_200           = color.rgb(255, 255, 000, 65)
+COLOR_233           = color.rgb(255, 128, 000, 65)
+COLOR_365           = color.rgb(255, 055, 255, 65)
+COLOR_377           = color.rgb(128, 000, 128, 65)
+COLOR_VWAP          = color.white
+//---[SMA]
+SMA_020             = ta.sma(source = close, length = 20)
+SMA_021             = ta.sma(source = close, length = 21)
+SMA_050             = ta.sma(source = close, length = 50)
+SMA_055             = ta.sma(source = close, length = 55)
+SMA_200             = ta.sma(source = close, length = 200)
+SMA_233             = ta.sma(source = close, length = 233)
+SMA_365             = ta.sma(source = close, length = 365)
+SMA_377             = ta.sma(source = close, length = 377)
+V_WAP               = ta.vwap(source = close)
+//
+//------------------------------------------------------<INPUTS>------------------------------------------------------//
+//
+//---[GROUP][PRICE-LINE]
+var string _gp1 = "Price Line"
+priceLineColor  = input.color(color.rgb(255, 255, 255, 50), "Price Line", group=_gp1)
+priceLineWidth  = input.int(1, "Price Line", step=1, minval=1, maxval=5, group=_gp1)
+//---[GROUP][TIME-LINES]
+var string _gp2 = "Time Lines"
+tzOffset        = input.int(5, "Time Zone Offset", step=1, minval=-24, maxval=24, group=_gp2)
+eventLineWidth  = input.int(5, "Event Line", step=1, minval=1, maxval=10, group=_gp2)
+hourLineWidth   = input.int(1, "Time Line", step=1, minval=1, maxval=3, group=_gp2)
+//---[GROUP][SMA-BANDS]
+var string _gp3 = "Buddha-SMA-Bands"
+int smaLineWidth    = input.int(3, "Line Width", step=1, minval=1, maxval=5, group=_gp3)
+int vwapLineWidth   = input.int(1, "Line Width", step=1, minval=1, maxval=5, group=_gp3)
+//---[GROUP][CHART-LABELS]
+var string _gp4 = "Time Interval"
+i_time_interval = input.string("1D", "", inline="11", options=["1", "5", "15", "30", "60", "1D", "1W", "1M", "3M", "12M"], group=_gp4)
+//
+var string _gp5 = "Label Display"
+i_posColor      = input.color(color.rgb(38, 166, 154), title="Bullish Color", group=_gp5)
+i_negColor      = input.color(color.rgb(240, 83, 80), title="Bearish Color", group=_gp5)
+i_inside_color  = input.color(color.new(color.white, 0), "Inside Bar", inline="12", group=_gp5)
+i_outside_color = input.color(color.new(color.yellow, 0), "Outside Bar", inline="12", group=_gp5)
+i_tableYpos     = input.string("top", "Panel position", inline="11", options=["top", "middle", "bottom"], group=_gp5)
+i_tableXpos     = input.string("center", "", inline="11", options=["left", "center", "right"], group=_gp5)
+i_position      = input.string("horizontal", "Direction", options=["horizontal", "vertical"], group=_gp5)
+i_textSize      = input.string("large", "Text Size", options=["tiny", "small", "normal", "large", "huge"], group=_gp5)
+//
+var string _gp6 = "Symbols"
+ticker01 = input.symbol("SPY", group=_gp6)
+ticker02 = input.symbol("ES1!", group=_gp6)
+ticker03 = input.symbol("QQQ", group=_gp6)
+ticker04 = input.symbol("NQ1!", group=_gp6)
+ticker05 = input.symbol("VIX", group=_gp6)
+ticker06 = input.symbol("DXY", group=_gp6)
+ticker07 = input.symbol("TLT", group=_gp6)
+ticker08 = input.symbol("MSFT", group=_gp6)
+ticker09 = input.symbol("AAPL", group=_gp6)
+ticker10 = input.symbol("AMZN", group=_gp6)
+ticker11 = input.symbol("NVDA", group=_gp6)
+ticker12 = input.symbol("GOOGL", group=_gp6)
+ticker13 = input.symbol("META", group=_gp6)
+ticker14 = input.symbol("TSLA", group=_gp6)
+//
+var table perfTable = table.new(i_tableYpos + '_' + i_tableXpos, 7, 7, border_width=3)
+//
+//-----------------------------------------------<FUNCTION_DECLARATIONS>----------------------------------------------//
+//
+//  @function Draws a line to the right of the sma value.
+//  @returns Draws new line
+// drawSmaLine(SMA_Value, lineColor, lineWidth) =>
+//     var line SMA_Line = na
+//     if barstate.islast and barstate.isrealtime
+//         if not na(SMA_Line)
+//             line.delete(SMA_Line)
+//         SMA_Line := line.new(time, SMA_Value, time + 1, SMA_Value, xloc.bar_time, extend.right)
+//         line.set_color(SMA_Line, lineColor)
+//         line.set_style(SMA_Line, line.style_solid)
+//         line.set_width(SMA_Line, lineWidth)
+//     SMA_Line
+//
+//---[FUNCTION][drawLine]
+//  @function Draws a line to the right of the float value.
+//  @returns Draws line
+drawLine(floatValue, lineColor, lineWidth) =>
+    var line drawLine = na
+    if barstate.islast and barstate.isrealtime
+        if not na(drawLine)
+            line.delete(drawLine)
+        drawLine := line.new(time, floatValue, time + 1, floatValue, xloc.bar_time, extend.right)
+        line.set_color(drawLine, lineColor)
+        line.set_style(drawLine, line.style_solid)
+        line.set_width(drawLine, lineWidth)
+    drawLine
+//
+//---[FUNCTION][vLine]
+//  @function Draws Vertical Line
+//  @returns Draws Line
+vLine(barIndex, lineColor, lineWidth) =>
+    var line vLine = na
+    vLine := line.new(barIndex, low - ta.tr, barIndex, high + ta.tr, xloc.bar_index, extend.both)
+    line.set_color(vLine, lineColor)
+    line.set_style(vLine, line.style_solid)
+    line.set_width(vLine, lineWidth)
+    vLine
+//
+//---[FUNCTION][f_candle_type]
+//@function test
+//@returns  test
+f_candle_type(_high, _high1, _low, _low1) =>
+    _candle_type = 0
+    if _high > _high1 and _low < _low1
+        _candle_type := 3
+        _candle_type
+    else
+        if _high <= _high1 and _low >= _low1
+            _candle_type := 1
+            _candle_type
+        else
+            _candle_type := 2
+            _candle_type
+    _candle_type
+//
+//---[FUNCTION][f_rateOfreturn]
+//@function test
+//@returns  test
+f_rateOfreturn(_v1, _v2, _high, _high1, _low, _low1) =>
+    _performance = (_v1 - _v2) * 100 / math.abs(_v2)
+    _candle_type = f_candle_type(_high, _high1, _low, _low1)
+    [_performance, _candle_type]
+//
+//---[FUNCTION][f_performance]
+//@function test
+//@returns  test
+f_performance(_symbol) =>
+    [_performance, _candle_type] = request.security(_symbol, i_time_interval, f_rateOfreturn(close, close[1], high, high[1], low, low[1]))
+    [_performance, _candle_type]
+//
+//---[FUNCTION][f_fillCell]
+//@function test
+//@returns  test
+f_fillCell(_table, _column, _row, _performance, _candle_type, _symbol) =>
+    _c_color = _performance >= 0 ? i_posColor : i_negColor
+    _transp = math.abs(_performance) > 2 ? HEAVYTRANSP : math.abs(_performance) > 1 ? AVGTRANSP : LIGHTTRANSP
+    _cellText = str.tostring(_performance, '0.00') + '%\n' + _symbol
+    color _text_color = na
+    if _candle_type == 1
+        _text_color := i_inside_color
+        _text_color
+    else
+        if _candle_type == 3
+            _text_color := i_outside_color
+            _text_color
+        else
+            _text_color := _c_color
+            _text_color
+    table.cell(_table, _column, _row, _cellText, bgcolor=color.new(_c_color, _transp), text_color=_text_color, text_size=i_textSize)
+//---------------------------------------------------<CALCULATIONS>---------------------------------------------------//
+color   color_020_021_band = na
+color   color_050_055_band = na
+color   color_200_233_band = na
+color   color_365_377_band = na
+//---[COLOR-LOGIC]
+color_020_021_band := SMA_020 > SMA_021 ? COLOR_020 : COLOR_021
+color_050_055_band := SMA_050 > SMA_055 ? COLOR_050 : COLOR_055
+color_200_233_band := SMA_200 > SMA_233 ? COLOR_200 : COLOR_233
+color_365_377_band := SMA_365 > SMA_377 ? COLOR_365 : COLOR_377
+//------------------------------------------------------<VISUAL>------------------------------------------------------//
+//
+//---[PRICE-LINE]
+priceLine = drawLine(close, priceLineColor, priceLineWidth)
+//---[PLOT-SMA]
+plot020sma   = plot(SMA_020,  "20 SMA", COLOR_020, smaLineWidth, plot.style_line)
+plot021sma   = plot(SMA_021,  "21 SMA", COLOR_021, smaLineWidth, plot.style_line)
+plot050sma   = plot(SMA_050,  "50 SMA", COLOR_050, smaLineWidth, plot.style_line)
+plot055sma   = plot(SMA_055,  "55 SMA", COLOR_055, smaLineWidth, plot.style_line)
+plot200sma   = plot(SMA_200, "200 SMA", COLOR_200, smaLineWidth, plot.style_line)
+plot233sma   = plot(SMA_233, "233 SMA", COLOR_233, smaLineWidth, plot.style_line)
+plot365sma   = plot(SMA_365, "365 SMA", COLOR_365, smaLineWidth, plot.style_line)
+plot377sma   = plot(SMA_377, "377 SMA", COLOR_377, smaLineWidth, plot.style_line)
+plotVWAP     = plot(V_WAP,    "V-Wap", COLOR_VWAP, vwapLineWidth, plot.style_line)
+//---[PLOT-SMA-FILL]
+fill(plot020sma, plot021sma, SMA_020, SMA_021, color_020_021_band, color_020_021_band,   "20-21 SMA-Band")
+fill(plot050sma, plot055sma, SMA_050, SMA_055, color_050_055_band, color_050_055_band,   "50-55 SMA-Band")
+fill(plot200sma, plot233sma, SMA_200, SMA_233, color_200_233_band, color_200_233_band, "200-233 SMA-Band")
+fill(plot365sma, plot377sma, SMA_365, SMA_377, color_365_377_band, color_365_377_band, "365-377 SMA-Band")
+//---[EXTEND-LINE]
+LINE_020 = drawLine(SMA_020, COLOR_020, smaLineWidth)
+LINE_021 = drawLine(SMA_021, COLOR_021, smaLineWidth)
+LINE_050 = drawLine(SMA_050, COLOR_050, smaLineWidth)
+LINE_055 = drawLine(SMA_055, COLOR_055, smaLineWidth)
+LINE_200 = drawLine(SMA_200, COLOR_200, smaLineWidth)
+LINE_233 = drawLine(SMA_233, COLOR_233, smaLineWidth)
+LINE_365 = drawLine(SMA_365, COLOR_365, smaLineWidth)
+LINE_377 = drawLine(SMA_377, COLOR_377, smaLineWidth)
+LINE_VWAP = drawLine(V_WAP, COLOR_VWAP, vwapLineWidth)
+//---[EXTEND-LINE-FILL]
+FILL_020_021 = linefill.new(LINE_020, LINE_021, color = color_020_021_band)
+FILL_050_055 = linefill.new(LINE_050, LINE_055, color = color_050_055_band)
+FILL_200_233 = linefill.new(LINE_200, LINE_233, color = color_200_233_band)
+FILL_365_377 = linefill.new(LINE_365, LINE_377, color = color_365_377_band)
+//---[LABELS]
+if barstate.islast
+    if i_position == 'horizontal'
+        [_performanceh1, _candle_typeh1] = f_performance(ticker01)
+        f_fillCell(perfTable, 0, 0, _performanceh1, _candle_typeh1, array.get(str.split(ticker01, ':'), 1))
+        [_performanceh2, _candle_typeh2] = f_performance(ticker02)
+        f_fillCell(perfTable, 1, 0, _performanceh2, _candle_typeh2, array.get(str.split(ticker02, ':'), 1))
+        [_performanceh3, _candle_typeh3] = f_performance(ticker03)
+        f_fillCell(perfTable, 2, 0, _performanceh3, _candle_typeh3, array.get(str.split(ticker03, ':'), 1))
+        [_performanceh4, _candle_typeh4] = f_performance(ticker04)
+        f_fillCell(perfTable, 3, 0, _performanceh4, _candle_typeh4, array.get(str.split(ticker04, ':'), 1))
+        [_performanceh5, _candle_typeh5] = f_performance(ticker05)
+        f_fillCell(perfTable, 4, 0, _performanceh5, _candle_typeh5, array.get(str.split(ticker05, ':'), 1))
+        [_performanceh6, _candle_typeh6] = f_performance(ticker06)
+        f_fillCell(perfTable, 5, 0, _performanceh6, _candle_typeh6, array.get(str.split(ticker06, ':'), 1))
+        [_performanceh7, _candle_typeh7] = f_performance(ticker07)
+        f_fillCell(perfTable, 6, 0, _performanceh7, _candle_typeh7, array.get(str.split(ticker07, ':'), 1))
+        [_performanceh8, _candle_typeh8] = f_performance(ticker08)
+        f_fillCell(perfTable, 0, 1, _performanceh8, _candle_typeh8, array.get(str.split(ticker08, ':'), 1))
+        [_performanceh9, _candle_typeh9] = f_performance(ticker09)
+        f_fillCell(perfTable, 1, 1, _performanceh9, _candle_typeh9, array.get(str.split(ticker09, ':'), 1))
+        [_performanceh10, _candle_typeh10] = f_performance(ticker10)
+        f_fillCell(perfTable, 2, 1, _performanceh10, _candle_typeh10, array.get(str.split(ticker10, ':'), 1))
+        [_performanceh11, _candle_typeh11] = f_performance(ticker11)
+        f_fillCell(perfTable, 3, 1, _performanceh11, _candle_typeh11, array.get(str.split(ticker11, ':'), 1))
+        [_performanceh12, _candle_typeh12] = f_performance(ticker12)
+        f_fillCell(perfTable, 4, 1, _performanceh12, _candle_typeh12, array.get(str.split(ticker12, ':'), 1))
+        [_performanceh13, _candle_typeh13] = f_performance(ticker13)
+        f_fillCell(perfTable, 5, 1, _performanceh13, _candle_typeh13, array.get(str.split(ticker13, ':'), 1))
+        [_performanceh14, _candle_typeh14] = f_performance(ticker14)
+        f_fillCell(perfTable, 6, 1, _performanceh14, _candle_typeh14, array.get(str.split(ticker14, ':'), 1))
+    else if i_position == 'vertical'
+        [_performancev1, _candle_typev1] = f_performance(ticker01)
+        f_fillCell(perfTable, 0, 0, _performancev1, _candle_typev1, array.get(str.split(ticker01, ':'), 1))
+        [_performancev2, _candle_typev2] = f_performance(ticker02)
+        f_fillCell(perfTable, 1, 0, _performancev2, _candle_typev2, array.get(str.split(ticker02, ':'), 1))
+        [_performancev3, _candle_typev3] = f_performance(ticker03)
+        f_fillCell(perfTable, 0, 1, _performancev3, _candle_typev3, array.get(str.split(ticker03, ':'), 1))
+        [_performancev4, _candle_typev4] = f_performance(ticker04)
+        f_fillCell(perfTable, 1, 1, _performancev4, _candle_typev4, array.get(str.split(ticker04, ':'), 1))
+        [_performancev5, _candle_typev5] = f_performance(ticker05)
+        f_fillCell(perfTable, 0, 2, _performancev5, _candle_typev5, array.get(str.split(ticker05, ':'), 1))
+        [_performancev6, _candle_typev6] = f_performance(ticker06)
+        f_fillCell(perfTable, 1, 2, _performancev6, _candle_typev6, array.get(str.split(ticker06, ':'), 1))
+        [_performancev7, _candle_typev7] = f_performance(ticker07)
+        f_fillCell(perfTable, 0, 3, _performancev7, _candle_typev7, array.get(str.split(ticker07, ':'), 1))
+        [_performancev8, _candle_typev8] = f_performance(ticker08)
+        f_fillCell(perfTable, 1, 3, _performancev8, _candle_typev8, array.get(str.split(ticker08, ':'), 1))
+        [_performancev9, _candle_typev9] = f_performance(ticker09)
+        f_fillCell(perfTable, 0, 4, _performancev9, _candle_typev9, array.get(str.split(ticker09, ':'), 1))
+        [_performancev10, _candle_typev10] = f_performance(ticker10)
+        f_fillCell(perfTable, 1, 4, _performancev10, _candle_typev10, array.get(str.split(ticker10, ':'), 1))
+        [_performancev11, _candle_typev11] = f_performance(ticker11)
+        f_fillCell(perfTable, 0, 5, _performancev11, _candle_typev11, array.get(str.split(ticker11, ':'), 1))
+        [_performancev12, _candle_typev12] = f_performance(ticker12)
+        f_fillCell(perfTable, 1, 5, _performancev12, _candle_typev12, array.get(str.split(ticker12, ':'), 1))
+        [_performancev13, _candle_typev13] = f_performance(ticker13)
+        f_fillCell(perfTable, 0, 6, _performancev13, _candle_typev13, array.get(str.split(ticker13, ':'), 1))
+        [_performancev14, _candle_typev14] = f_performance(ticker14)
+        f_fillCell(perfTable, 1, 6, _performancev14, _candle_typev14, array.get(str.split(ticker14, ':'), 1))
+//---[TIME-LINE]
+//---[01:00AM]
+timeLine1 = hour(time, "GMT") - tzOffset == 1 and minute(time, "GMT") == 0
+if timeLine1
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[02:00AM]
+timeLine2 = hour(time, "GMT") - tzOffset == 2 and minute(time, "GMT") == 0
+if timeLine2
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[03:00AM]
+timeLine3 = hour(time, "GMT") - tzOffset == 3 and minute(time, "GMT") == 0
+if timeLine3
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[04:00AM]
+timeLine4 = hour(time, "GMT") - tzOffset == 4 and minute(time, "GMT") == 0
+if timeLine4
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[05:00AM]
+timeLine5 = hour(time, "GMT") - tzOffset == 5 and minute(time, "GMT") == 0
+if timeLine5
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[06:00AM]
+timeLine6 = hour(time, "GMT") - tzOffset == 6 and minute(time, "GMT") == 0
+if timeLine6
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[07:00AM]
+timeLine7 = hour(time, "GMT") - tzOffset == 7 and minute(time, "GMT") == 0
+if timeLine7
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[08:00AM]
+timeLine8 = hour(time, "GMT") - tzOffset == 8 and minute(time, "GMT") == 0
+if timeLine8
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[09:00AM]
+timeLine9 = hour(time, "GMT") - tzOffset == 9 and minute(time, "GMT") == 0
+if timeLine9
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[09:30AM_OPEN-EQUITY]
+openLine = hour(time, "GMT") - tzOffset == 9 and minute(time, "GMT") == 30
+if openLine
+    vLine(bar_index, COLOR_OPEN, eventLineWidth)
+//---[10:00AM]
+timeLine10 = hour(time, "GMT") - tzOffset == 10 and minute(time, "GMT") == 0
+if timeLine10
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[11:00AM]
+timeLine11 = hour(time, "GMT") - tzOffset == 11 and minute(time, "GMT") == 0
+if timeLine11
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[12:00PM_OPEN-LUNCH-NYSE]
+startLunchLine = hour(time, "GMT") - tzOffset == 12 and minute(time, "GMT") == 0
+if startLunchLine
+    vLine(bar_index, COLOR_VLINE, eventLineWidth)
+//---[01:00PM_CLOSE-LUNCH-NYSE]
+closeLunchLine = hour(time, "GMT") - tzOffset == 13 and minute(time, "GMT") == 0
+if closeLunchLine
+    vLine(bar_index, COLOR_VLINE, eventLineWidth)
+//---[02:00PM]
+timeLine14 = hour(time, "GMT") - tzOffset == 14 and minute(time, "GMT") == 0
+if timeLine14
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[03:00PM]
+timeLine15 = hour(time, "GMT") - tzOffset == 15 and minute(time, "GMT") == 0
+if timeLine15
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[04:00PM_CLOSE-EQUITY]
+closeLine = hour(time, "GMT") - tzOffset == 16 and minute(time, "GMT") == 0
+if closeLine
+    vLine(bar_index, COLOR_CLOSE, eventLineWidth)
+//---[05:00PM]
+timeLine17 = hour(time, "GMT") - tzOffset == 17 and minute(time, "GMT") == 0
+if timeLine17
+    vLine(bar_index, COLOR_FUTURES, eventLineWidth)
+//---[06:00PM]
+timeLine18 = hour(time, "GMT") - tzOffset == 18 and minute(time, "GMT") == 0
+if timeLine18
+    vLine(bar_index, COLOR_FUTURES, eventLineWidth)
+//---[07:00PM]
+timeLine19 = hour(time, "GMT") - tzOffset == 19 and minute(time, "GMT") == 0
+if timeLine19
+    vLine(bar_index, COLOR_VLINE, hourLineWidth)
+// //---[08:00PM]--- Might not work past 7pm?
+// timeLine20 = hour(time, "GMT") - tzOffset == 20 and minute(time, "GMT") == 0
+// if timeLine20
+//     vLine(bar_index, COLOR_VLINE, hourLineWidth)
+// //---[09:00PM]
+// timeLine21 = hour(time, "GMT") - tzOffset == 21 and minute(time, "GMT") == 0
+// if timeLine21
+//     vLine(bar_index, COLOR_VLINE, hourLineWidth)
+// //---[10:00PM]
+// timeLine22 = hour(time, "GMT") - tzOffset == 22 and minute(time, "GMT") == 0
+// if timeLine22
+//     vLine(bar_index, COLOR_VLINE, hourLineWidth)
+// //---[11:00PM]
+// timeLine23 = hour(time, "GMT") - tzOffset == 23 and minute(time, "GMT") == 0
+// if timeLine23
+//     vLine(bar_index, COLOR_VLINE, hourLineWidth)
+// //---[12:00PM]
+// timeLine24 = hour(time, "GMT") - tzOffset == 24 and minute(time, "GMT") == 0
+// if timeLine24
+//     vLine(bar_index, COLOR_VLINE, hourLineWidth)
+//---[TIME-LINE_FUTURES]
+//
+//-----------------------------------------------------[END-CODE]-----------------------------------------------------//
+//
+//  Downloading from any other source besides Trading View, for example Github.
+//
+//  MIT License
+//
+//  Copyright (c) 2024 Darth Buddha
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in all
+//  copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//  SOFTWARE.
